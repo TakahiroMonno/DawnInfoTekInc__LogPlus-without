@@ -1,0 +1,349 @@
+commit f6a891be1798ce96b0b1c2089e3b7c9c3237ca65
+Author: ryanwang <aqahc.support@dawninfotek.com>
+Date:   Mon Jan 7 15:45:56 2019 -0500
+
+    add log4j2 jsonlayout
+
+diff --git a/pom.xml b/pom.xml
+index 9845bb5..91012c8 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -33,6 +33,22 @@
+       <version>3.0.1</version>
+       <scope>provided</scope>
+     </dependency>
++    <dependency>
++    	<groupId>com.google.code.gson</groupId>
++    	<artifactId>gson</artifactId>
++    	<version>2.8.2</version>
++	</dependency>
++	<dependency>
++    	<groupId>org.projectlombok</groupId>
++    	<artifactId>lombok</artifactId>
++    	<version>1.18.2</version>
++    	<scope>provided</scope>
++	</dependency>
++	<dependency>
++    	<groupId>org.apache.logging.log4j</groupId>
++    	<artifactId>log4j-core</artifactId>
++    	<version>2.11.0</version>
++	</dependency>
+     <dependency>
+       <groupId>org.slf4j</groupId>
+       <artifactId>slf4j-api</artifactId>
+diff --git a/src/main/java/com/dawninfotek/logx/config/JsonFieldsConstants.java b/src/main/java/com/dawninfotek/logx/config/JsonFieldsConstants.java
+new file mode 100644
+index 0000000..288fa5c
+--- /dev/null
++++ b/src/main/java/com/dawninfotek/logx/config/JsonFieldsConstants.java
+@@ -0,0 +1,25 @@
++package com.dawninfotek.logx.config;
++
++public interface JsonFieldsConstants {
++
++	// public default fields
++	public static final String Timestamp = "timestamp";
++	public static final String Level = "level";
++	public static final String Thread = "thread";
++	public static final String Logger = "logger";
++	public static final String Message = "message";
++	public static final String Exception = "exception";
++	
++	// public custom fields
++	public static final String Hostname = "hostname";
++	public static final String ClientIP = "clientIp";
++	public static final String ProcessId = "processId";
++	public static final String ServiceName = "serviceName";
++	public static final String UUID = "uuid";
++	public static final String LogMethod = "logMethod";
++	public static final String SessionId = "sessionId";
++	public static final String ClientId = "clientId";
++	public static final String ApplicationName = "applicationName";
++	
++	
++}
+diff --git a/src/main/java/com/dawninfotek/logx/extension/log4j2/CustomMessage.java b/src/main/java/com/dawninfotek/logx/extension/log4j2/CustomMessage.java
+new file mode 100644
+index 0000000..66f945c
+--- /dev/null
++++ b/src/main/java/com/dawninfotek/logx/extension/log4j2/CustomMessage.java
+@@ -0,0 +1,25 @@
++package com.dawninfotek.logx.extension.log4j2;
++
++import lombok.Builder;
++import lombok.Value;
++
++import java.io.Serializable;
++import java.util.Map;
++
++@Value
++@Builder
++public class CustomMessage implements Serializable {
++
++    /**
++	 * 
++	 */
++	private static final long serialVersionUID = 1L;
++	
++	private String message;
++    private Map<String, Object> newField;
++
++    public String toJson() {
++        return JsonUtils.getGson().toJson(this);
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/java/com/dawninfotek/logx/extension/log4j2/JsonUtils.java b/src/main/java/com/dawninfotek/logx/extension/log4j2/JsonUtils.java
+new file mode 100644
+index 0000000..8abbe30
+--- /dev/null
++++ b/src/main/java/com/dawninfotek/logx/extension/log4j2/JsonUtils.java
+@@ -0,0 +1,22 @@
++package com.dawninfotek.logx.extension.log4j2;
++
++import com.google.gson.Gson;
++import com.google.gson.JsonParseException;
++
++
++public class JsonUtils {
++
++    private static Gson GSON = new Gson();
++
++    public static Gson getGson() {
++        return GSON;
++    }
++
++    public static CustomMessage generateCustomMessage(String message) {
++        try {
++            return getGson().fromJson(message, CustomMessage.class);
++        } catch (JsonParseException ex) {
++            return null;
++        }
++    }
++}
+\ No newline at end of file
+diff --git a/src/main/java/com/dawninfotek/logx/extension/log4j2/LogXJsonLayout.java b/src/main/java/com/dawninfotek/logx/extension/log4j2/LogXJsonLayout.java
+new file mode 100644
+index 0000000..4e696a9
+--- /dev/null
++++ b/src/main/java/com/dawninfotek/logx/extension/log4j2/LogXJsonLayout.java
+@@ -0,0 +1,152 @@
++package com.dawninfotek.logx.extension.log4j2;
++
++import java.nio.charset.Charset;
++
++import java.sql.Timestamp;
++import java.text.SimpleDateFormat;
++import java.util.TimeZone;
++
++import org.apache.logging.log4j.core.LogEvent;
++import org.apache.logging.log4j.core.layout.AbstractStringLayout;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++import org.slf4j.MDC;
++import org.apache.logging.log4j.core.config.Configuration;
++import org.apache.logging.log4j.core.config.plugins.Plugin;
++import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
++import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
++import org.apache.logging.log4j.core.config.plugins.PluginFactory;
++import org.apache.logging.log4j.core.config.Node;
++import org.apache.logging.log4j.core.Layout;
++import org.apache.logging.log4j.core.impl.ThrowableProxy;
++
++import com.google.gson.JsonObject;
++import com.dawninfotek.logx.config.JsonFields;
++import com.dawninfotek.logx.core.LogXContext;
++import com.google.gson.Gson;
++
++
++@Plugin(name = "LogXJsonLayout", category = Node.CATEGORY, elementType = Layout.ELEMENT_TYPE)
++public class LogXJsonLayout extends AbstractStringLayout {
++	
++	public static Logger logger = LoggerFactory.getLogger(LogXJsonLayout.class);
++	private final Gson gson = JsonUtils.getGson();
++	
++	public String DefaultTimestampFormat = "yyyy-MM-dd HH:mm:ss.SSS zzz";
++	public String DefaultTimezone = "EST";
++    
++    protected LogXJsonLayout(Configuration config, Charset aCharset, Serializer headerSerializer, Serializer footerSerializer) {
++        super(config, aCharset, headerSerializer, footerSerializer);
++    }
++
++    @PluginFactory
++    public static LogXJsonLayout createLayout(@PluginConfiguration final Configuration config,
++                                                @PluginAttribute(value = "charset", defaultString = "US-ASCII") final Charset charset) {
++        return new LogXJsonLayout(config, charset, null, null);
++    }
++    
++
++    @Override
++    public String toSerializable(LogEvent event) {
++
++        JsonObject jsonObject = new JsonObject();
++
++        // Log Information
++        jsonObject.addProperty("datetime", TimestampToString(event.getTimeMillis()));
++        jsonObject.addProperty("level", event.getLevel().name());
++        jsonObject.addProperty("thread", event.getThreadName() + " : " + event.getThreadId());
++
++        final StackTraceElement source = event.getSource();
++        String logger = source.getClassName() + " " + source.getFileName() + ":" + source.getLineNumber();
++        jsonObject.addProperty("method", source.getMethodName());
++        jsonObject.addProperty("logger", logger);
++
++        // Message
++        CustomMessage customMessage = JsonUtils.generateCustomMessage(event.getMessage().getFormattedMessage());
++        if (customMessage != null) {
++            jsonObject.addProperty("message", customMessage.getMessage());
++            // enable message key value object for JRE1.8 or later
++//            customMessage.getNewField().forEach((k, v) -> {
++//                if (v instanceof String) {
++//                    jsonObject.addProperty(k, (String) v);
++//                } else if (v instanceof Number) {
++//                    jsonObject.addProperty(k, (Number) v);
++//                } else if (v instanceof Character) {
++//                    jsonObject.addProperty(k, (Character) v);
++//                } else if (v instanceof Boolean) {
++//                    jsonObject.addProperty(k, (Boolean) v);
++//                } else {
++//                    jsonObject.addProperty(k, gson.toJson(v));
++//                }
++//            });
++        } else {
++            jsonObject.addProperty("message", event.getMessage().getFormattedMessage());
++        }
++
++        // Exceptions
++        if (event.getThrownProxy() != null) {
++            final ThrowableProxy thrownProxy = event.getThrownProxy();
++            final Throwable throwable = thrownProxy.getThrowable();
++
++            String exception = "";
++            final String exceptionsClass = throwable.getClass().getCanonicalName();
++            final String exceptionsMessage = throwable.getMessage();
++            final String stackTrace = thrownProxy.getExtendedStackTraceAsString("");
++            
++            if (exceptionsClass != null) {
++                exception += exceptionsClass;
++            }
++
++            if (exceptionsMessage != null) {
++                exception += exceptionsMessage;
++            }
++
++            if (stackTrace != null) {
++                exception += stackTrace;
++            }
++            
++            if(!exception.isEmpty()) {
++            	jsonObject.addProperty("exception", exception);
++            }
++        }
++
++        return gson.toJson(jsonObject).concat("\r\n");
++    }
++    
++    protected JsonObject CustomFields(JsonObject jsonObject) {
++    	for(JsonFields field: LogXContext.configuration().getJsonFields()) {
++        	try {
++        		String searchName = field.getName();
++        		String key = field.getDisplayName();
++        		String value = getFromMDC(searchName);
++        		if(value.isEmpty()) {
++        			// get applicationName from context
++
++        		}
++        		// display if mandatory (no [], or [Y or T]) or value exist
++            	if(field.getDisplay() || !value.isEmpty()) { 
++            		jsonObject.addProperty(key, value);
++            	}
++        	}catch (Exception e) {
++        		logger.error(e.getMessage());
++        	}
++        }
++    	return jsonObject;
++    }
++    
++    protected String getFromMDC(String value) {
++		String result = MDC.get(value);
++		if(result == null) {
++			return "";
++		}
++		return result;
++	}
++    
++    protected String TimestampToString(long millseconds) {
++		SimpleDateFormat formatter = new SimpleDateFormat(DefaultTimestampFormat);
++        formatter.setTimeZone(TimeZone.getTimeZone(DefaultTimezone));
++        Timestamp tsp = new Timestamp(millseconds);
++        return formatter.format(tsp);
++	}
++	
++}
+diff --git a/src/main/java/com/dawninfotek/logx/extension/logback/LogXJsonLayout.java b/src/main/java/com/dawninfotek/logx/extension/logback/LogXJsonLayout.java
+index 6f574ea..a100813 100644
+--- a/src/main/java/com/dawninfotek/logx/extension/logback/LogXJsonLayout.java
++++ b/src/main/java/com/dawninfotek/logx/extension/logback/LogXJsonLayout.java
+@@ -25,25 +25,29 @@ public class LogXJsonLayout extends JsonLayout {
+         map.remove("context");
+         
+         for(JsonFields field: LogXContext.configuration().getJsonFields()) {
+-    		String searchName = field.getName();
+-    		String key = field.getDisplayName();
+-    		String value = getFromMDC(searchName);
+-    		if(value.isEmpty()) {
+-    			// get applicationName from context
+-    			if(searchName.equals(LogXConstants.APPLICATION_NAME)) {
+-    				value = getApplicationName(event);
+-    			}else if(searchName.equals(LOGMETHOD)) {
+-    				// get log method from logger
+-    				value = getMethodFromLogger(event);
+-    			}else if(map.get(searchName) != null && !key.equals(searchName)) {
+-    				// change default field name
+-    				value = map.get(searchName).toString();
+-    				map.remove(searchName);
+-    			}
+-    		}
+-    		// display if mandatory (no [], or [Y or T]) or value exist
+-        	if(field.getDisplay() || !value.isEmpty()) { 
+-    			add(key, true, value, map);
++        	try {
++        		String searchName = field.getName();
++        		String key = field.getDisplayName();
++        		String value = getFromMDC(searchName);
++        		if(value.isEmpty()) {
++        			// get applicationName from context
++        			if(searchName.equals(LogXConstants.APPLICATION_NAME)) {
++        				value = getApplicationName(event);
++        			}else if(searchName.equals(LOGMETHOD)) {
++        				// get log method from logger
++        				value = getMethodFromLogger(event);
++        			}else if(map.get(searchName) != null && !key.equals(searchName)) {
++        				// change default field name
++        				value = map.get(searchName).toString();
++        				map.remove(searchName);
++        			}
++        		}
++        		// display if mandatory (no [], or [Y or T]) or value exist
++            	if(field.getDisplay() || !value.isEmpty()) { 
++        			add(key, true, value, map);
++            	}
++        	}catch (Exception e) {
++        		logger.error(e.getMessage());
+         	}
+         }
+         return map;
+diff --git a/web.xml b/web.xml
+index 23c09d9..f61fec2 100644
+--- a/web.xml
++++ b/web.xml
+@@ -4,7 +4,7 @@
+ 
+     <context-param>
+         <param-name>logx-config-file</param-name>
+-        <param-value>CLASS_PATH=logx-default.properties</param-value>
++        <param-value>CLASS_PATH=logx.properties</param-value>
+     </context-param>
+     <listener>
+         <listener-class>com.dawninfotek.logx.core.LogXWebContextListener</listener-class>

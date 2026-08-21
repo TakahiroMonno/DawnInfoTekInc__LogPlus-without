@@ -1,0 +1,71 @@
+{
+  "library": {
+    "id": "log4j",
+    "old_version": "1.x.x",
+    "new_version": "2.x.x",
+    "language": "Java"
+  },
+  "repository": "DawnInfoTekInc/LogPlus",
+  "clone_url": "https://github.com/DawnInfoTekInc/LogPlus.git",
+  "checked_out_commit": "c9683fe17ff27b5445f523299acb03b6ebac5a88",
+  "migration_commit": "f6a891be1798ce96b0b1c2089e3b7c9c3237ca65",
+  "migration_commit_url": "https://github.com/DawnInfoTekInc/LogPlus/commit/f6a891be1798ce96b0b1c2089e3b7c9c3237ca65",
+  "migration_commit_message": "add log4j2 jsonlayout",
+  "manifest_path": "pom.xml",
+  "transition": {
+    "is_migration": true,
+    "reason": "new_added_while_old_present",
+    "before": {
+      "kind": "maven",
+      "exists": true,
+      "old": [
+        "log4j:log4j:1.2.17"
+      ],
+      "new": [],
+      "bridge": [],
+      "parse_error": "xml_parse_error: unbound prefix: line 3, column 0"
+    },
+    "after": {
+      "kind": "maven",
+      "exists": true,
+      "old": [
+        "log4j:log4j:1.2.17"
+      ],
+      "new": [
+        "org.apache.logging.log4j:log4j-core:2.11.0"
+      ],
+      "bridge": [],
+      "parse_error": "xml_parse_error: unbound prefix: line 3, column 0"
+    },
+    "removed_old": [],
+    "added_new": [
+      "org.apache.logging.log4j:log4j-core:2.11.0"
+    ],
+    "old_remains_after": true,
+    "bridge_only": false
+  },
+  "build": {
+    "tool": "maven",
+    "has_wrapper": false,
+    "java_target": "1.6",
+    "test_frameworks": [
+      "junit4"
+    ],
+    "test_file_count": 1
+  },
+  "expected_source_changes": [
+    "src/main/java/com/dawninfotek/logx/config/JsonFieldsConstants.java",
+    "src/main/java/com/dawninfotek/logx/extension/log4j2/CustomMessage.java",
+    "src/main/java/com/dawninfotek/logx/extension/log4j2/JsonUtils.java",
+    "src/main/java/com/dawninfotek/logx/extension/log4j2/LogXJsonLayout.java",
+    "src/main/java/com/dawninfotek/logx/extension/logback/LogXJsonLayout.java"
+  ],
+  "files_importing_old_library": 5,
+  "conditions": {
+    "1_uses_old_version": true,
+    "2_has_local_tests": true,
+    "3_imports_library": true,
+    "4_manifest_and_source_changed": true
+  },
+  "notes": []
+}
