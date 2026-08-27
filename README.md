@@ -21,7 +21,9 @@ This framework provides features which can be used in different purposes, it cur
 2. configuration:
     1. [logback.xml](src/main/resources/logback.xml) file, change to your desire, an example provided in this repository
     2. [web.xml](src/main/resources/web.xml) file, add listener, filter, filter-mapping, context-param for customized config
-    3. customized config file (see [logx.properties](logx.properties) as an example), default config file (see [logx-default.properties](src/main/resources/logx-default.properties)) will be used if no config property file exist/find 
+    3. customized config file (see [logx.properties](logx.properties) as an example), default config file (see [logx-default.properties](src/main/resources/logx-default.properties)) will be used if no config property file exist/find
+    4. log4j 1.2.17 integration (`com.dawninfotek.logx.extension.log4j12`) is configured through `log4j.properties`/`log4j.xml` as usual, see [log4j.properties](src/test/resources/log4j.properties) for an example using `LogXEnhancedPatternLayout` and `LogXThrowableRenderer`
+    5. log4j 2.x integration (`com.dawninfotek.logx.extension.log4j2`) provides the `%logXMessage` and `%logXThrowable` PatternLayout conversion words for use in `log4j2.xml`/`log4j2.properties`, see [log4j2.xml](src/test/resources/log4j2.xml) for an example
     
     ---
     > LogPlus puts some special key value in to the log based on the property configuration file, 

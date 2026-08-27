@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Log4j 2 equivalent of log4j.properties, demonstrating the LogX log4j2
+  integration (com.dawninfotek.logx.extension.log4j2). The LogX custom
+  pattern converters (%logXMessage, %logXThrowable) are discovered
+  automatically via the Log4j2Plugins.dat generated at compile time by the
+  Log4j 2 annotation processor.
+-->
+<Configuration status="WARN">
+
+  <Appenders>
+    <Console name="CONSOLE" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n" />
+    </Console>
+
+    <RollingFile name="FILE" fileName="/tmp/log/test/log4j.log"
+                 filePattern="/tmp/log/test/log4j-%i.log">
+      <PatternLayout>
+        <Pattern>{"timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS zzz}{Canada/Eastern}", "hostname": "${hostName}", "clientIp": "%X{remoteIp}", "appName": "${contextName}", "logLevel ": "%5p", "processId": "%X{processId}", "serviceName": "%X{transactionPath}", "corrId": "%X{uuid}", "sessionId": "%X{sessionId}", "clientId": "%X{userName}", "logMethod": "%M", "thread": "%thread", "logger": "%logger{36}:%L", "message": "%logXMessage", "exception": "%logXThrowable{2}"}%n</Pattern>
+      </PatternLayout>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="100 KB" />
+      </Policies>
+      <DefaultRolloverStrategy max="10" />
+    </RollingFile>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="com.dawninfotek.logx.extension.log4j2" level="TRACE">
+      <AppenderRef ref="FILE" />
+    </Logger>
+
+    <Root level="ERROR">
+      <AppenderRef ref="CONSOLE" />
+      <AppenderRef ref="FILE" />
+    </Root>
+  </Loggers>
+
+</Configuration>
