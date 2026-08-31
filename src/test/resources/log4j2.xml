@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration packages="com.dawninfotek.logx.extension.log4j12">
+  <Appenders>
+    <Console name="CONSOLE" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"/>
+    </Console>
+    <RollingFile name="FILE" fileName="/tmp/log/test/log4j.log" filePattern="/tmp/log/test/log4j-%d{yyyy-MM-dd}-%i.log">
+      <PatternLayout pattern="{&quot;timestamp&quot;: &quot;%d{yyyy-MM-dd HH:mm:ss.SSS zzz}{Canada/Eastern}&quot;, &quot;hostname&quot;: &quot;${hostName}&quot;, &quot;clientIp&quot;: &quot;%X{remoteIp}&quot;, &quot;appName&quot;: &quot;${contextName}&quot;, &quot;logLevel &quot;: &quot;%5p&quot;, &quot;processId&quot;: &quot;%X{processId}&quot;, &quot;serviceName&quot;: &quot;%X{transactionPath}&quot;, &quot;corrId&quot;: &quot;%X{uuid}&quot;, &quot;sessionId&quot;: &quot;%X{sessionId}&quot;, &quot;clientId&quot;: &quot;%X{userName}&quot;, &quot;logMethod&quot;: &quot;%M&quot;, &quot;thread&quot;: &quot;%thread&quot;, &quot;logger&quot;: &quot;%logger{36}:%L&quot;, &quot;message&quot;: &quot;%m&quot;, &quot;exception&quot;: &quot;%throwable{2}&quot;}%n"/>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="100 KB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+  </Appenders>
+  <Loggers>
+    <Logger name="com.dawninfotek.logx.extension.log4j12" level="TRACE" additivity="false">
+      <AppenderRef ref="FILE"/>
+    </Logger>
+    <Root level="ERROR">
+      <AppenderRef ref="CONSOLE"/>
+      <AppenderRef ref="FILE"/>
+    </Root>
+  </Loggers>
+</Configuration>
